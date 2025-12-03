@@ -1,20 +1,17 @@
 import { type ConfigPlugin, createRunOncePlugin } from '@expo/config-plugins';
 import { withBuildProperties } from 'expo-build-properties';
 import withCoreLibraryDesugaring from './withCoreLibraryDesugaring';
+import withDynamicWorkaround from './withDynamicWorkaround';
 import withLibsignalClient, {
 	type LibSignalConfig,
 } from './withLibSignalClient';
-import withStaticWorkarounds, {
-	type StaticWorkaroundOptions,
-} from './withStaticWorkarounds';
 
 export interface LibsignalPluginProps
-	extends LibSignalConfig,
-		StaticWorkaroundOptions {
-	ios?: LibSignalConfig['ios'] &
-		StaticWorkaroundOptions['ios'] & {
-			frameworkLinkage?: 'static' | 'dynamic';
-		};
+	extends LibSignalConfig {
+	ios?: LibSignalConfig['ios'] & {
+		disableStaticWorkarounds?: boolean;
+		frameworkLinkage?: 'static' | 'dynamic';
+	};
 }
 
 const withReactNativeLibsignalClient: ConfigPlugin<
@@ -29,10 +26,8 @@ const withReactNativeLibsignalClient: ConfigPlugin<
 
 	newConfig = withLibsignalClient(newConfig, props);
 
-	// Always apply static workarounds when using dynamic linkage (and allow user override list).
-	if (linkage === 'dynamic') {
-		newConfig = withStaticWorkarounds(newConfig, props);
-	}
+	// Applys dynamic workaround required for the libsignal to build
+	newConfig = withDynamicWorkaround(newConfig, props);
 
 	newConfig = withCoreLibraryDesugaring(newConfig);
 	return newConfig;
